@@ -1,36 +1,64 @@
-
-import './App.css'
-import { Landing } from './assets/components/Landing'
-
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { Signin } from './assets/components/Signin';
+import { initializeApp } from "firebase/app";
+import { useEffect } from 'react';
+import { RecoilRoot, useRecoilState } from 'recoil'; // Added import statements
+import { userAtom } from './assets/components/store/atoms/user'; // Corrected import
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDAKQnTHdEp08x65M2MQXNwdxMKqfXqsnA",
-  authDomain: "leetcodeclone-63463.firebaseapp.com",
-  projectId: "leetcodeclone-63463",
-  storageBucket: "leetcodeclone-63463.appspot.com",
-  messagingSenderId: "572371213126",
-  appId: "1:572371213126:web:ff683624e56bf0231f6347",
-  measurementId: "G-NN3X4YZ0WZ"
+  apiKey: "your-api-key",
+  authDomain: "your-auth-domain",
+  projectId: "your-project-id",
+  storageBucket: "your-storage-bucket",
+  messagingSenderId: "your-messaging-sender-id",
+  appId: "your-app-id",
+  measurementId: "your-measurement-id"
 };
 
-
-const app = initializeApp(firebaseConfig);
-
+export const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
 
 function App() {
-  
-
   return (
-    <>
-      <div>
-        <Signin />
-      </div>
-      
-    </>
-  )
+    <RecoilRoot>
+      <StoreApp />
+    </RecoilRoot>
+  );
 }
 
-export default App
+function StoreApp() {
+  const [user, setUser] = useRecoilState(userAtom); // Corrected atom name
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user && user.email) {
+        setUser({
+          loading: false,
+          user: {
+            email: user.email
+          }
+        });
+        console.log("this is the user: -", user);
+      } else {
+        setUser({
+          loading: false
+        });
+        console.log("there is no logged in user");
+      }
+    });
+    return () => unsubscribe();
+  }, [setUser]); // Added setUser to dependency array
+
+  if (user.loading) {
+    return <div>loading...</div>;
+  }
+  if (!user.user) {
+    return <Signin />;
+  }
+  return (
+    <>
+      You are logged in as {user.user.email}
+    </>
+  ); 
+}
+
+export default App;
